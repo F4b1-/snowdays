@@ -1,5 +1,6 @@
 import './admin.html'
 import './admin.list'
+import './admin.allocation'
 import './admin.add_new'
 import './admin.settings'
 import './admin.stats'
@@ -29,6 +30,9 @@ Template.AdminPage.events({
         break;
       case 'stats':
         Session.set('tab', 'AdminStatsSection');
+        break;
+      case 'allocation':
+        Session.set('tab', 'AdminAllocationSection');
         break;
     }
   },
