@@ -4,12 +4,12 @@ import Accommodations from '/imports/collections/accommodations'
 import jwt from 'jsonwebtoken'
 import _ from 'lodash'
 import {deepFlatten, deepPick, deepFind} from '/lib/js/utilities'
-import popups from 'popups';
+
 
 let fields = require('/imports/collections/db_allowed_values.json');
 
 const participantsIndices = {'firstName': 1, 'lastName': 1};
-const accomIndices = {'name': 1, 'address':1, 'busZone':1};
+const accomIndices = {'name': 1, 'address': 1, 'busZone': 1};
 
 const usersIndices = {'username': 1, 'profile.firstName': 1, 'profile.lastName': 1, 'roles': 1};
 
@@ -65,6 +65,8 @@ Template.AdminAllocationSection.onCreated(function () {
             });
         })
     });
+
+
 });
 
 Template.AdminAllocationSection.onRendered(function () {
@@ -73,9 +75,67 @@ Template.AdminAllocationSection.onRendered(function () {
 
 Template.AdminAllocationSection.events({
 
-     'click #allocate_button': function (event, template) {
-    	swal('Contraints', "Add constraints", 'info');
-     },
+    'click #allocate_button': function (event, template) {
+
+        acco = new ReactiveVar({
+            name: 'accommodations',
+            instance: Accommodations,
+            flattened: template.flattenedFields.get(),
+            searchQuery: '',
+            filters: []
+        });
+        let collection = acco.get();
+        Meteor.subscribe("participants")
+        $.when(setSubscription(collection.filters, collection.searchQuery, collection.flattened)).done(function (options) {
+            Meteor.subscribe(collection.name + ".all", options, () => {
+                accomRes = Accommodations.find().fetch();
+                participantsRes = Participants.find().fetch();
+                console.log(participantsRes);
+
+                HTTP.call('POST', 'http://localhost:3333/autoAllocation', {
+                    data: {"accomodations": accomRes, "participants": participantsRes}
+                }, function (error, response) {
+                    if (error) {
+                        console.log(error);
+                    } else {
+
+                        var allocOverview = "<ul style='text-align: left'>";
+x
+                        response.data.forEach(function(obj) {
+                            var participant = obj.firstName + " " + obj.lastName;
+                            var host = obj.host.firstName + " " + obj.host.lastName;
+                            allocOverview = allocOverview + "<li> <span style='font-weight: bold'>" + participant + "</span> hosted by: " + host + "</li>"
+                        });
+
+                        allocOverview = allocOverview + "</ul>"
+                        swal({title: "Allocations received from Allocation system:", html: allocOverview});
+
+
+                        /*      response.data.forEach(function(obj) {
+                                  var currHost = obj.host;
+                                  var currId = obj._id;
+                                  console.log(currId)
+
+                                  var participants = Meteor.subscribe("participants")
+                                  Participants.update({_id: currId}, {$push: {'host': 'lalla'}}, function (error) {
+                                      if (error) console.log(error)
+                                      else console.log("YEAH");
+                                  })
+
+
+                                  //findCollection.host = currHost;
+                                  //Participants.update(currId, {$push: findCollection[0]});
+
+                              });*/
+
+                    }
+                });
+
+
+            });
+        });
+
+    },
 
     /**
      * Switches between collections
@@ -426,7 +486,6 @@ function generateTable(template, options) {
     });
 
     tableHead.append("<th class='animated fadeIn'>Actions</th>");
-    tableHead.append("<th class='animated fadeIn'>Host</th>");
     tableHead.append("</tr>");
 
     // BODY
