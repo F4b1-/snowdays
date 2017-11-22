@@ -100,7 +100,7 @@ Template.AdminAllocationSection.events({
                     } else {
 
                         var allocOverview = "<ul style='text-align: left'>";
-x
+
                         response.data.forEach(function(obj) {
                             var participant = obj.firstName + " " + obj.lastName;
                             var host = obj.host.firstName + " " + obj.host.lastName;
